@@ -48,18 +48,28 @@ app.get('/',(req,res)=>{
         })
    
 });
+// adding item to the database
 app.post('/', function(req,res){
     var item = req.body.nextItem;
-    if(req.body.list === "work"){
-        workItems.push(item);
-        res.redirect("/work")
-    }else{
-        items.push(item);
-        res.redirect('/');
-    }
+    const itemToAdd= new Item({
+        name:item,
+    });
+    itemToAdd.save();
+    res.redirect("/");    
+})
+
+app.post("/delete", (req,res)=>{
+    // console.log(req.body.checkbox);
+    const checkedId= req.body.checkbox;
     
-    
-    
+    Item.findByIdAndRemove(checkedId,(err)=>{
+        if(err) console.log(err);
+        else{
+            console.log("item removed")
+            res.redirect("/");
+        }
+        
+    })
 })
 app.get("/work", (req,res)=>{
     res.render("list",{listTitle: "work", itemsToAdd: workItems});
