@@ -12,6 +12,8 @@
                 <input type="checkbox" value="<%= itemsToAdd[index].id %>" name="checkbox" onChange="this.form.submit()">
                 <p><%= itemsToAdd[index].name %> </p>
             </div> 
+           <!-- use hidden input field to pass the list -->
+            <input type="hidden" name="listName" value="<%= listTitle %> ">
         </form>
             
 

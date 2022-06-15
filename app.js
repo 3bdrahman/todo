@@ -9,18 +9,18 @@ const itemSchema=new mongoose.Schema({
     name: String,
 })
 const Item=new mongoose.model("item",itemSchema);
-
+const task1=new Item({
+    name: "Task1",
+})
+const task2=new Item({
+    name: "Task2",
+})
+const task3=new Item({
+    name: "Task3",
+})
+const startingItems=[task1,task2,task3];
 function getDefault(){
-    const task1=new Item({
-        name: "Task1",
-    })
-    const task2=new Item({
-        name: "Task2",
-    })
-    const task3=new Item({
-        name: "Task3",
-    })
-    const startingItems=[task1,task2,task3];
+   
     Item.insertMany(startingItems,(err)=>{
         if(err) console.log("error while adding database starting items");
         else{
@@ -29,6 +29,13 @@ function getDefault(){
     })
 }
 
+// different routes have different lists of the list collection
+const listSchema=new mongoose.Schema({
+    name:String,
+    items:[itemSchema]
+})
+
+const List = new mongoose.model("List",listSchema);
 
 const body_parser=require("body-parser");
 const date =require(__dirname + "/date.js");
@@ -44,36 +51,71 @@ app.get('/',(req,res)=>{
             if(result.length===0){
                 getDefault();
             }
-            res.render("list",{listTitle : day, itemsToAdd: result});
+            res.render("list",{listTitle : "Today", itemsToAdd: result});
         })
    
 });
+app.get("/:customListName",(req,res)=>{
+    const listName = req.params.customListName
+    List.findOne({name:listName},(err,result)=>{
+        if(result){
+            // show existing list
+            res.render("list",{listTitle: result.name, itemsToAdd: result.items})
+        }else{
+            // create new list
+            const list = new List({
+                name: listName,
+                items:startingItems
+            })
+            list.save()
+            res.redirect("/"+listName);
+        }
+    })
+    
+})
 // adding item to the database
 app.post('/', function(req,res){
     var item = req.body.nextItem;
+    const list = req.body.list;
     const itemToAdd= new Item({
         name:item,
     });
-    itemToAdd.save();
-    res.redirect("/");    
+    if(list === "Today"){
+        itemToAdd.save();
+        res.redirect("/"); 
+    }else{
+        List.findOne({name: list},(err,foundList)=>{
+            foundList.items.push(itemToAdd);
+            foundList.save()
+            res.redirect("/"+list);
+        })
+    }
+       
 })
 
 app.post("/delete", (req,res)=>{
     // console.log(req.body.checkbox);
     const checkedId= req.body.checkbox;
-    
-    Item.findByIdAndRemove(checkedId,(err)=>{
-        if(err) console.log(err);
-        else{
-            console.log("item removed")
-            res.redirect("/");
-        }
-        
-    })
+    const list = req.body.listName;
+    if(list==="Today"){
+        Item.findByIdAndRemove(checkedId,(err)=>{
+            if(err) console.log(err);
+            else{
+                console.log("item removed")
+                res.redirect("/");
+            }
+            
+        })
+    }else{
+        List.findOneAndUpdate({name:list},{$pull: {items: {_id:checkedId}}},(err,foundList)=>{
+            if(!err){
+                res.redirect("/"+list)
+            }
+        })
+    }
+
 })
-app.get("/work", (req,res)=>{
-    res.render("list",{listTitle: "work", itemsToAdd: workItems});
-})
+
 app.post("/work", (req,res)=>{
     
     let item = req.body.nextItem;
