@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const mongoose =require('mongoose');
+const _=require("lodash");
 app.set("view engine", "ejs");
 // setting up mongoose
 var items =[];
@@ -55,6 +56,8 @@ app.get('/',(req,res)=>{
         })
    
 });
+
+
 app.get("/:customListName",(req,res)=>{
     const listName = req.params.customListName
     List.findOne({name:listName},(err,result)=>{
@@ -75,7 +78,7 @@ app.get("/:customListName",(req,res)=>{
 })
 // adding item to the database
 app.post('/', function(req,res){
-    var item = req.body.nextItem;
+    var item = _.capitalize(req.body.nextItem);
     const list = req.body.list;
     const itemToAdd= new Item({
         name:item,
